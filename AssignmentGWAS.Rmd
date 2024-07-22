@@ -1,0 +1,580 @@
+---
+title: "AssignmentGWAS"
+output: html_document
+date: "2024-07-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(dplyr)
+```
+
+Question 1
+
+```{r}
+y <- array(c(1, 'SNP1', 'rs1', 100, 'A', 'G', 0, 0.1, 0.9, 0.3, 0.3, 0.4, 0, 0.88, 0.12,
+1, 'SNP2', 'rs2', 200, 'A', 'C', 0, 0.9, 0.1, 1, 0, 0, 0.2, 0.6, 0.2,
+1, 'SNP3', 'rs3', 300, 'T', 'G', 0.94, 0, 0.06, 1, 0, 0, 0, 0.92, 0.08,
+1, 'SNP4', 'rs4', 400, 'A', 'T', .5, 0.4, 0.1, 0.01, 0.99, 0, 0.2, 0.8, 0,
+1, 'SNP5', 'rs5', 500, 'T', 'A', 0, 0.9, 0.1, 1, 0, 0, 0.2, 0.6, 0.2), dim = c(15,5))
+y
+t(y)
+```
+
+```{r}
+A <- matrix(c(1, 'SNP1', 'rs1', 100, 'A', 'G', 0, 0.1, 0.9, 0.3, 0.3, 0.4, 0, 0.88, 0.12,
+1, 'SNP2', 'rs2', 200, 'A', 'C', 0, 0.9, 0.1, 1, 0, 0, 0.2, 0.6, 0.2,
+1, 'SNP3', 'rs3', 300, 'T', 'G', 0.94, 0, 0.06, 1, 0, 0, 0, 0.92, 0.08,
+1, 'SNP4', 'rs4', 400, 'A', 'T', .5, 0.4, 0.1, 0.01, 0.99, 0, 0.2, 0.8, 0,
+1, 'SNP5', 'rs5', 500, 'T', 'A', 0, 0.9, 0.1, 1, 0, 0, 0.2, 0.6, 0.2), 15, 5)
+A
+```
+
+```{r}
+t(y)
+```
+
+```{r}
+y_hard <- t(array(c(1, 'SNP1', 'rs1', 100, 'A', 'G', 2, 2, 1,
+1, 'SNP2', 'rs2', 200, 'A', 'C', 1, 0, 1,
+1, 'SNP3', 'rs3', 300, 'T', 'G', 0, 0, 1,
+1, 'SNP4', 'rs4', 400, 'A', 'T', 0, 1, 1,
+1, 'SNP5', 'rs5', 500, 'T', 'A', 1, 0, 1), dim = c(9,5)))
+y_hard
+```
+
+```{r}
+y_dosage <- t(matrix(c(1, 'SNP1', 'rs1', 100, 'A', 'G', 0*0 + 0.1*1 + 0.9*2, 0.3*0 + 0.3*1 + 0.4*2, 0*0 + 0.88*1 + 0.12*2,
+1, 'SNP2', 'rs2', 200, 'A', 'C', 0*0 + 0.9*1 + 0.1*2, 1*0 + 0*1 + 0*2, 0.2*0 + 0.6*1 + 0.2*2,
+1, 'SNP3', 'rs3', 300, 'T', 'G', 0.94*0 + 0*1 + 0.06*2, 1*0 + 0*1 + 0*2, 0*0 + 0.92*1 + 0.08*2,
+1, 'SNP4', 'rs4', 400, 'A', 'T', .5*0 + 0.4*1 + 0.1*2, 0.01*0 + 0.99*1 + 0*2, 0.2*0 + 0.8*1 + 0*2,
+1, 'SNP5', 'rs5', 500, 'T', 'A', 0*0 + 0.9*1 + 0.1*2, 1*0 + 0*0 + 0*2, 0.2*0 + 0.6*1 + 0.2*2), 9, 5))
+y_dosage
+```
+```{r}
+getwd()
+```
+
+Question 3
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA")
+stats = read.table("data.stats",head=T)
+miss = read.table("data.missing",head=T)
+stats
+```
+```{r}
+miss
+```
+
+```{r}
+par(mfrow=c(2,1))
+hist(miss[,4],xlab="Heterozygosity Rate",n=50,main="")
+hist(miss[,3],xlab="Missing rate",n=50,main="")
+```
+
+```{r}
+# par(mfrow=c(2,1))
+hist(stats[,5],xlab="Minor Allele Frequency",n=50,main="")
+```
+
+```{r}
+hist(stats[,6],xlab="Call rate",n=50,main="", ylim=c(0,200))
+```
+
+```{r}
+# remove SNPs
+stats_filt <- stats %>% filter(MAF < 0.01|Call_Rate < 0.9)
+dim(stats)
+dim(stats_filt)
+```
+
+```{r}
+# call rate
+stats_filt <- stats %>% filter(Call_Rate < 0.9)
+dim(stats_filt)
+```
+```{r}
+stats_filt
+```
+```{r}
+# only names
+SNPs_filt <- stats_filt[1]
+SNPs_filt 
+# "" and ; must be removed
+```
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA")
+write.table(SNPs_filt, file = 'filtered_SNPs.txt', col.names = F, row.names = F)
+```
+
+```{r}
+# remove individuals with het
+miss_filt <- miss %>% filter(Heterozygosity_Rate < 0.22)
+dim(miss)
+dim(miss_filt)
+```
+
+```{r}
+# only names
+ind_filt <- miss_filt[1]
+ind_filt <- cbind(ind_filt, ind_filt) # two ID columns are necessary to match with the .fam file
+ind_filt
+# "" must be removed
+```
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA")
+write.table(ind_filt, file = 'filtered_ind.txt', col.names = F, row.names = F)
+```
+
+Question 7
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA")
+linreg = read.table("linear.assoc", head=T)
+head(linreg)
+```
+
+```{r}
+which(linreg[,7] < 5e-8)
+```
+
+```{r}
+significant <- linreg %>% filter(Wald_P < 5e-8)
+significant
+```
+
+```{r}
+which.min(linreg[,7])
+linreg[41353,]
+```
+
+```{r}
+plot(-log10(linreg[,7]),col=linreg[,1],xlab="Chromosome",
+ylab=expression(paste("-log"[10]," p-value",sep="")),
+main="A Manhattan Plot",axes=F,pch=19)
+```
+
+```{r}
+plot(-log10(linreg[,7]),col=linreg[,1],xlab="Chromosome",
+ylab=expression(paste("-log"[10]," p-value",sep="")),
+main="A Manhattan Plot",axes=F,pch=19)
+marks=array(0,23);
+for(i in 1:22)
+{
+a=which(linreg[,1]==i);
+marks[i+1]=marks[i]+length(a);
+}
+marks2=(marks[-1]+marks[-23])/2
+axis(1,at=marks,rep("",23));
+axis(1,at=marks2,lab=1:22,tick=F)
+axis(2);
+abline(h=-log10(5e-8),lwd=3,lty=2)
+```
+
+```{r}
+chromosome_to_zoom <- 2
+
+# Filter the data for the specified chromosome
+chrom_data <- linreg[linreg[, 1] == chromosome_to_zoom, ]
+
+# Plot the data for the specified chromosome
+plot(
+  -log10(chrom_data[, 7]),
+  col = chrom_data[, 1],
+  xlab = "Chromosome Position",
+  ylab = expression(paste("-log"[10], " p-value", sep = "")),
+  main = paste("Manhattan Plot: Chromosome", chromosome_to_zoom),
+  axes = F,
+  pch = 19
+)
+
+# Add axes
+# Calculate integer positions for x-axis
+num_positions <- length(chrom_data[, 7])
+x_ticks <- seq(1, num_positions, by = round(num_positions / 10))
+
+# Add axes with integer x-axis labels
+axis(1, at = x_ticks, labels = x_ticks)
+axis(2)
+
+# Add genome-wide significance threshold line
+abline(h = -log10(5e-8), lwd = 3, lty = 2)
+
+# Display the plot
+box()
+
+```
+
+```{r}
+chromosome_to_zoom <- 8
+
+# Filter the data for the specified chromosome
+chrom_data <- linreg[linreg[, 1] == chromosome_to_zoom, ]
+
+# Plot the data for the specified chromosome
+plot(
+  -log10(chrom_data[, 7]),
+  col = chrom_data[, 1],
+  xlab = "Chromosome Position",
+  ylab = expression(paste("-log"[10], " p-value", sep = "")),
+  main = paste("Manhattan Plot: Chromosome", chromosome_to_zoom),
+  axes = F,
+  pch = 19
+)
+
+# Add axes
+# Calculate integer positions for x-axis
+num_positions <- length(chrom_data[, 7])
+x_ticks <- seq(1, num_positions, by = round(num_positions / 10))
+
+# Add axes with integer x-axis labels
+axis(1, at = x_ticks, labels = x_ticks)
+axis(2)
+
+# Add genome-wide significance threshold line
+abline(h = -log10(5e-8), lwd = 3, lty = 2)
+
+# Display the plot
+box()
+
+```
+
+```{r}
+chromosome_to_zoom <- 11
+
+# Filter the data for the specified chromosome
+chrom_data <- linreg[linreg[, 1] == chromosome_to_zoom, ]
+
+# Plot the data for the specified chromosome
+plot(
+  -log10(chrom_data[, 7]),
+  col = chrom_data[, 1],
+  xlab = "Chromosome Position",
+  ylab = expression(paste("-log"[10], " p-value", sep = "")),
+  main = paste("Manhattan Plot: Chromosome", chromosome_to_zoom),
+  axes = F,
+  pch = 19
+)
+
+# Add axes
+# Calculate integer positions for x-axis
+num_positions <- length(chrom_data[, 7])
+x_ticks <- seq(1, num_positions, by = round(num_positions / 10))
+
+# Add axes with integer x-axis labels
+axis(1, at = x_ticks, labels = x_ticks)
+axis(2)
+
+# Add genome-wide significance threshold line
+abline(h = -log10(5e-8), lwd = 3, lty = 2)
+
+# Display the plot
+box()
+
+```
+```{r}
+0.5/62612
+```
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA")
+getwd()
+pheno = read.table("phen.pheno",head=T)
+pheno
+```
+```{r}
+# Permute the phenotype column
+set.seed(1)  # Set seed for reproducibility
+pheno$Phen1 <- sample(pheno$Phen1)
+
+write.table(pheno, file = "permuted.pheno", quote = FALSE, row.names = FALSE, col.names = TRUE, sep = "\t")
+pheno
+```
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA")
+# Read the .pheno file
+pheno <- read.table("phen.pheno", header = TRUE)
+
+# Define the number of permutations
+num_permutations <- 1000
+
+# Perform permutations
+for (i in 1:num_permutations) {
+  set.seed(i)  # Set seed for reproducibility for each permutation
+  permuted_pheno <- pheno
+  permuted_pheno$Phen1 <- sample(pheno$Phen1)
+  
+  # Write the permuted .pheno file
+  write.table(permuted_pheno, file = paste0("permuted_", i, ".pheno"), quote = FALSE, row.names = FALSE, col.names = TRUE, sep = "\t")
+}
+
+```
+
+```{r}
+directory <- "/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignA/pvalues_folder"  
+
+# List all files in the directory
+files <- list.files(directory, full.names = TRUE)
+head(files)
+
+# Read all files into a list of data frames
+data_list <- lapply(files, function(file) {
+  read.table(file, header = TRUE)
+})
+
+# Combine all data frames into one
+combined_data <- bind_rows(data_list)
+
+# Display the combined data
+print(combined_data)
+
+```
+
+```{r}
+# Show distribution of p-values
+hist(combined_data$P, xlab = "p-values", main = "Histogram of p-values")
+```
+
+```{r}
+min_pvalue <- sapply(data_list, function(df) min(df[, 2]))
+head(min_pvalue) # all permutations have low p-values that would be significant with a threshold of 0.05
+```
+
+```{r}
+hist(min_pvalue, xlab = "min p-value", main = "Histogram of min p-value per permutation", breaks = 30)
+abline(v = 4.67e-7 , col = "red", lwd = 2, lty = 2)
+```
+```{r}
+log_min_p <- log(min_pvalue)
+hist(log_min_p, xlab = "min log p-value", main = "Histogram of min log p-value per permutation", breaks = 10)
+abline(v = -14.58 , col = "red", lwd = 2, lty = 2)
+```
+
+```{r}
+quantile(min_pvalue, 0.05)
+quantile(min_pvalue, 0.5)
+quantile(min_pvalue, 0.95)
+
+quantile(log_min_p, 0.05)
+```
+```{r}
+min(min_pvalue)
+max(min_pvalue)
+log(4.5446e-09)
+log(7.6006e-06) 
+log(4.66621e-07) # the threshold
+```
+
+```{r}
+0.05/62535
+```
+
+```{r}
+setwd("/Users/astridklitgaarddahl/Documents/Uni/GWAS/assignB/")
+linreg = read.table("linreg.assoc",head=T)
+linreg
+```
+```{r}
+scorefile <- linreg %>% select(-Chromosome, -Basepair, -Wald_Stat, -SD, -Effect_Liability, -SD_Liability, -MAF)
+scorefile
+```
+```{r}
+scorefile <- scorefile %>% select(Predictor, A1, A2, A1_Mean, Effect)
+scorefile
+```
+```{r}
+colnames(scorefile)[colnames(scorefile) == "A1_Mean"] <- "Centre"
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile, file = 'scores.txt', col.names = T, row.names = F)
+```
+
+```{r}
+# Bonferroni corrected p-value
+0.05/50000
+```
+
+```{r}
+# Score files for the range 0.1 - 1e-07
+scorefile07 <- linreg %>% filter(Wald_P < 1e-07)
+scorefile07 <- scorefile07 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile07)[colnames(scorefile07) == "A1_Mean"] <- "Centre"
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile07, file = 'scores07.txt', col.names = T, row.names = F)
+```
+
+```{r}
+scorefile06 <- linreg %>% filter(Wald_P < 1e-06)
+scorefile06 <- scorefile06 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile06)[colnames(scorefile06) == "A1_Mean"] <- "Centre"
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile06, file = 'scores06.txt', col.names = T, row.names = F)
+```
+
+
+```{r}
+scorefile05 <- linreg %>% filter(Wald_P < 1e-05)
+scorefile05 <- scorefile05 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile05)[colnames(scorefile05) == "A1_Mean"] <- "Centre"
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile05, file = 'scores05.txt', col.names = T, row.names = F)
+```
+
+```{r}
+scorefile04 <- linreg %>% filter(Wald_P < 1e-04)
+scorefile04 <- scorefile04 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile04)[colnames(scorefile04) == "A1_Mean"] <- "Centre"
+scorefile04
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile04, file = 'scores04.txt', col.names = T, row.names = F)
+```
+
+```{r}
+scorefile03 <- linreg %>% filter(Wald_P < 1e-03)
+scorefile03 <- scorefile03 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile03)[colnames(scorefile03) == "A1_Mean"] <- "Centre"
+scorefile03
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile03, file = 'scores03.txt', col.names = T, row.names = F)
+```
+
+```{r}
+scorefile02 <- linreg %>% filter(Wald_P < 1e-02)
+scorefile02 <- scorefile02 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile02)[colnames(scorefile02) == "A1_Mean"] <- "Centre"
+scorefile02
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile02, file = 'scores02.txt', col.names = T, row.names = F)
+```
+
+
+```{r}
+scorefile01 <- linreg %>% filter(Wald_P < 1e-01)
+scorefile01 <- scorefile01 %>% select(Predictor, A1, A2, A1_Mean, Effect)
+colnames(scorefile01)[colnames(scorefile01) == "A1_Mean"] <- "Centre"
+```
+
+```{r}
+setwd("assignB")
+write.table(scorefile01, file = 'scores01.txt', col.names = T, row.names = F)
+```
+
+```{r}
+# Data frame for thresholds and PRS accuracy
+accuracy_df <- data.frame(threshold = c(1e-0, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1), cor = c(0.288, 0.335, 0.353, 0.376, 0.392, 0.378, 0.369, 0.397))
+```
+
+```{r}
+# Plot of the PRS accuracy
+library(ggplot2)
+ggplot(accuracy_df, aes(x = log(threshold), y = cor)) +
+  geom_point()
+```
+```{r}
+# df with only predictor and p-value for --thin-tops
+pvalues <- linreg %>% select(Predictor, P = Wald_P)
+pvalues
+setwd("assignB")
+write.table(pvalues, file = 'pvalues.pvalues', col.names = T, row.names = F)
+```
+```{r}
+# Data frame with clumping
+accuracy_df <- data.frame(threshold = c(1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0), cor = c(0.335, 0.353, 0.376, 0.392, 0.378, 0.369, 0.397, 0.288), cor_clumping = c(0.386, 0.410,  0.441, 0.446, 0.473, 0.408, 0.385, 0.247))
+```
+
+```{r}
+# Plot of the PRS accuracy with and without clumping
+library(ggplot2)
+ggplot(accuracy_df) +
+  geom_point(aes(x = log(threshold), y = cor)) +
+  geom_point(aes(x = log(threshold), y = cor_clumping), color = "blue") +
+  labs(title = "Scatter Plot with Two Different Y-Columns",
+       x = "Log(Threshold)",
+       y = "Correlation",
+       color = "Variable") +  # Legend title
+  theme_minimal()
+
+# ggplot(accuracy_df, aes(x = log(threshold), y = cor))
+# color clumping
+```
+
+```{r}
+# Tried
+# Loop to create multiple dataframes
+for (i in 1:10) {
+  # Create a filtered and selected dataframe
+  temp_df <- linreg %>% 
+    filter(Wald_P < 1e-06) %>% 
+    select(Predictor, A1, A2, A1_Mean, Effect)
+  
+  # Rename the column
+  colnames(temp_df)[colnames(temp_df) == "A1_Mean"] <- "Centre"
+  
+  # Assign a new name to the dataframe
+  assign(paste("scorefile", sprintf("%2d", i)), temp_df)
+}
+
+# List all created dataframes
+ls(pattern = "scorefile")
+```
+
+Question 5
+
+```{r}
+# kinship = T x 0.5^(S+1)
+1*0.5^(3+1)
+1/16
+
+1*0.5^(4+1)
+1/32
+
+# great great grandchild
+1*0.5^(3+1)
+1/16
+
+# Aunt
+2*0.5^(3+1)
+1/8
+
+# Great aunt
+2*0.5^(4+1)
+1/16
+
+# Great great aunt
+2*0.5^(5+1)
+1/32
+```
+
